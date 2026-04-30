@@ -32,55 +32,55 @@ export function VersionUpgradeModal({
             />
 
             {/* Modal */}
-            <div className="relative mx-4 max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-lg border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800">
+            <div className="relative mx-4 max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-md border border-border bg-card p-6 text-card-foreground">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-border/60 bg-muted">
+                            <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                             </svg>
                         </div>
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('versionUpdate.title')}</h2>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <h2 className="text-base font-semibold text-foreground">{t('versionUpdate.title')}</h2>
+                            <p className="text-xs text-muted-foreground">
                                 {releaseInfo?.title || t('versionUpdate.newVersionReady')}
                             </p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                        className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
                 {/* Version Info */}
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('versionUpdate.currentVersion')}</span>
-                        <span className="font-mono text-sm text-gray-900 dark:text-white">{currentVersion}</span>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/40 px-3 py-2">
+                        <span className="text-xs font-medium text-muted-foreground">{t('versionUpdate.currentVersion')}</span>
+                        <span className="font-mono text-xs text-foreground">{currentVersion}</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-700 dark:bg-blue-900/20">
-                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{t('versionUpdate.latestVersion')}</span>
-                        <span className="font-mono text-sm text-blue-900 dark:text-blue-100">{latestVersion}</span>
+                    <div className="flex items-center justify-between rounded-md border border-primary/30 bg-primary/10 px-3 py-2">
+                        <span className="text-xs font-medium text-primary">{t('versionUpdate.latestVersion')}</span>
+                        <span className="font-mono text-xs text-primary">{latestVersion}</span>
                     </div>
                 </div>
 
                 {/* Changelog */}
                 {releaseInfo?.body && (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">{t('versionUpdate.whatsNew')}</h3>
+                            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('versionUpdate.whatsNew')}</h3>
                             {releaseInfo?.htmlUrl && (
                                 <a
                                     href={releaseInfo.htmlUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                    className="flex items-center gap-1 text-xs text-primary transition-colors hover:underline"
                                 >
                                     {t('versionUpdate.viewFullRelease')}
                                     <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,8 +89,8 @@ export function VersionUpgradeModal({
                                 </a>
                             )}
                         </div>
-                        <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50">
-                            <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm text-gray-700 dark:prose-invert dark:text-gray-300">
+                        <div className="max-h-64 overflow-y-auto rounded-md border border-border/60 bg-muted/30 p-4">
+                            <div className="prose prose-sm max-w-none whitespace-pre-wrap text-xs text-foreground/90 dark:prose-invert">
                                 {cleanChangelog(releaseInfo.body)}
                             </div>
                         </div>
@@ -98,15 +98,15 @@ export function VersionUpgradeModal({
                 )}
 
                 {/* Forked-build notice — auto-update is disabled to protect local customizations */}
-                <div className="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-200">
-                    Auto-update er deaktiveret i denne build. Kør <code className="rounded bg-amber-100 px-1 font-mono dark:bg-amber-900/40">bash /home/claude/cloudcli-fork/update.sh</code> i terminalen for at hente upstream-ændringer og bygge fra fork.
+                <div className="rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    Auto-update er deaktiveret i denne build. Kør <code className="rounded bg-background/60 px-1.5 py-0.5 font-mono text-foreground">bash /home/claude/cloudcli-fork/update.sh</code> i terminalen for at hente upstream-ændringer og bygge fra fork.
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
                     <button
                         onClick={onClose}
-                        className="flex-1 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                        className="flex-1 rounded-md border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent"
                     >
                         {t('versionUpdate.buttons.close')}
                     </button>
