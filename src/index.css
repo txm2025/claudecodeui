@@ -745,6 +745,55 @@
     overflow-wrap: break-word;
   }
 
+  /* Cursor-style code blocks: monospace, subtle bg, low-key border */
+  .chat-message code {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em;
+  }
+
+  .chat-message :not(pre) > code {
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border) / 0.6);
+    border-radius: 0.25rem;
+    padding: 0.1em 0.35em;
+    color: hsl(var(--foreground));
+  }
+
+  .chat-message pre {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+    margin: 0.6rem 0;
+  }
+
+  .chat-message pre code {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    color: hsl(var(--foreground));
+  }
+
+  /* Cursor-style scrollbars: thin, low-contrast, no hard edges */
+  .dark::-webkit-scrollbar,
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .dark::-webkit-scrollbar-track,
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .dark::-webkit-scrollbar-thumb,
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  .dark::-webkit-scrollbar-thumb:hover,
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
   /* Prevent horizontal scroll in chat area */
   .chat-message * {
     max-width: 100%;

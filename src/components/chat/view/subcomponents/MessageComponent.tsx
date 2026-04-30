@@ -119,7 +119,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
       {message.type === 'user' ? (
         /* User message bubble on the right */
         <div className="flex w-full items-end space-x-0 sm:w-auto sm:max-w-[85%] sm:space-x-3 md:max-w-md lg:max-w-lg xl:max-w-xl">
-          <div className="group flex-1 rounded-2xl rounded-br-md bg-blue-600 px-3 py-2 text-white shadow-sm sm:flex-initial sm:px-4">
+          <div className="group flex-1 rounded-md border border-border/50 bg-secondary px-3 py-2 text-secondary-foreground sm:flex-initial sm:px-4">
             <div className="whitespace-pre-wrap break-words text-sm">
               {message.content}
             </div>
@@ -130,13 +130,13 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
                     key={img.name || idx}
                     src={img.data}
                     alt={img.name}
-                    className="h-auto max-w-full cursor-pointer rounded-lg transition-opacity hover:opacity-90"
+                    className="h-auto max-w-full cursor-pointer rounded-md transition-opacity hover:opacity-90"
                     onClick={() => window.open(img.data, '_blank')}
                   />
                 ))}
               </div>
             )}
-            <div className="mt-1 flex items-center justify-end gap-1 text-xs text-blue-100">
+            <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
               {shouldShowUserCopyControl && (
                 <MessageCopyControl content={userCopyContent} messageType="user" />
               )}
@@ -144,7 +144,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
             </div>
           </div>
           {!isGrouped && (
-            <div className="hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm text-white sm:flex">
+            <div className="hidden h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted text-xs font-medium text-muted-foreground sm:flex">
               U
             </div>
           )}
@@ -163,19 +163,19 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
           {!isGrouped && (
             <div className="mb-2 flex items-center space-x-3">
               {message.type === 'error' ? (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-600 text-sm text-white">
+                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 text-xs font-semibold text-destructive">
                   !
                 </div>
               ) : message.type === 'tool' ? (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-600 text-sm text-white dark:bg-gray-700">
+                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted text-xs text-muted-foreground">
                   🔧
                 </div>
               ) : (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full p-1 text-sm text-white">
+                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted p-1">
                   <SessionProviderLogo provider={provider} className="h-full w-full" />
                 </div>
               )}
-              <div className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {message.type === 'error' ? t('messageTypes.error') : message.type === 'tool' ? t('messageTypes.tool') : (provider === 'cursor' ? t('messageTypes.cursor') : provider === 'codex' ? t('messageTypes.codex') : provider === 'gemini' ? t('messageTypes.gemini') : t('messageTypes.claude'))}
               </div>
             </div>

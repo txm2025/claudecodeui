@@ -75,23 +75,23 @@ export default function ClaudeStatus({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 mb-3 w-full duration-500">
-      <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 overflow-hidden rounded-full border border-border/50 bg-slate-100 px-3 py-1.5 shadow-sm backdrop-blur-md dark:bg-slate-900">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 overflow-hidden rounded-md border border-border/60 bg-card/80 px-3 py-1.5 backdrop-blur">
 
         {/* Left Side: Identity & Status */}
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 ring-1 ring-primary/10">
+          <div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted">
             <SessionProviderLogo provider={provider} className="h-3.5 w-3.5" />
             {isLoading && (
-              <span className="absolute inset-0 animate-pulse rounded-full ring-2 ring-emerald-500/20" />
+              <span className="absolute inset-0 animate-pulse rounded-md ring-1 ring-primary/30" />
             )}
           </div>
 
           <div className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
               {providerLabel}
             </span>
             <div className="flex items-center gap-1.5">
-              <span className={cn("h-1.5 w-1.5 rounded-full", isLoading ? "bg-emerald-500 animate-pulse" : "bg-amber-500")} />
+              <span className={cn("h-1.5 w-1.5 rounded-full", isLoading ? "bg-primary animate-pulse" : "bg-muted-foreground/40")} />
               <p className="truncate text-xs font-medium text-foreground">
                 {statusText}<span className="inline-block w-4 text-primary">{isLoading ? dots : ''}</span>
               </p>
