@@ -146,7 +146,22 @@ export function useChatComposerState({
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
   const [thinkingMode, setThinkingMode] = useState('none');
-  const [messageQueue, setMessageQueue] = useState<string[]>([]);
+  const queueStorageKey = currentSessionId
+    ? `messageQueue:${currentSessionId}`
+    : selectedProject?.projectId
+      ? `messageQueue:project:${selectedProject.projectId}`
+      : null;
+  const [messageQueue, setMessageQueue] = useState<string[]>(() => {
+    if (typeof window === 'undefined' || !queueStorageKey) return [];
+    try {
+      const raw = safeLocalStorage.getItem(queueStorageKey);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputHighlightRef = useRef<HTMLDivElement>(null);
@@ -719,13 +734,68 @@ export function useChatComposerState({
     handleSubmitRef.current = handleSubmit;
   }, [handleSubmit]);
 
-  // Auto-send next queued message when streaming finishes.
-  const wasLoadingRef = useRef(isLoading);
+  // Persist the queue per session so it survives navigating away and back.
   useEffect(() => {
-    const wasLoading = wasLoadingRef.current;
-    wasLoadingRef.current = isLoading;
-    if (!wasLoading || isLoading) return;
-    if (messageQueue.length === 0 || !selectedProject) return;
+    if (!queueStorageKey) return;
+    try {
+      if (messageQueue.length === 0) {
+        safeLocalStorage.removeItem(queueStorageKey);
+      } else {
+        safeLocalStorage.setItem(queueStorageKey, JSON.stringify(messageQueue));
+      }
+    } catch {
+      // Storage may be full or disabled — degrade silently.
+    }
+  }, [messageQueue, queueStorageKey]);
+
+  // Reload the queue from storage when switching to a different session/project.
+  const lastQueueKeyRef = useRef(queueStorageKey);
+  useEffect(() => {
+    if (lastQueueKeyRef.current === queueStorageKey) return;
+    lastQueueKeyRef.current = queueStorageKey;
+    if (!queueStorageKey) {
+      setMessageQueue([]);
+      return;
+    }
+    try {
+      const raw = safeLocalStorage.getItem(queueStorageKey);
+      if (!raw) {
+        setMessageQueue([]);
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      setMessageQueue(
+        Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [],
+      );
+    } catch {
+      setMessageQueue([]);
+    }
+  }, [queueStorageKey]);
+
+  // Auto-send next queued message — only when we have a stable session whose
+  // stream has actually completed. Tracking the previous session prevents the
+  // spurious fire that happens when isLoading flips false because the user
+  // navigated away from a streaming session.
+  const prevLoadingRef = useRef(isLoading);
+  const prevSessionKeyRef = useRef<string | null>(queueStorageKey);
+  useEffect(() => {
+    const prevLoading = prevLoadingRef.current;
+    const prevSessionKey = prevSessionKeyRef.current;
+    prevLoadingRef.current = isLoading;
+    prevSessionKeyRef.current = queueStorageKey;
+
+    if (isLoading) return;
+    if (!selectedProject) return;
+    if (messageQueue.length === 0) return;
+
+    // Two ways to legitimately fire:
+    //   1. Stream just completed on the same session we're currently viewing.
+    //   2. We just landed on (or returned to) a session whose stream is idle
+    //      and has pending queued messages — auto-resume.
+    const justCompletedHere = prevLoading && prevSessionKey === queueStorageKey;
+    const sessionStableAndIdle = prevSessionKey === queueStorageKey && !prevLoading;
+    if (!justCompletedHere && !sessionStableAndIdle) return;
+
     const next = messageQueue[0];
     setMessageQueue((q) => q.slice(1));
     setInput(next);
@@ -735,7 +805,7 @@ export function useChatComposerState({
     };
     const t = setTimeout(fire, 50);
     return () => clearTimeout(t);
-  }, [isLoading, messageQueue, selectedProject]);
+  }, [isLoading, messageQueue, selectedProject, queueStorageKey]);
 
   const removeQueuedMessage = useCallback((index: number) => {
     setMessageQueue((q) => q.filter((_, i) => i !== index));
@@ -759,12 +829,7 @@ export function useChatComposerState({
       inputValueRef.current = next;
       return next;
     });
-    setMessageQueue([]);
   }, [selectedProject?.projectId]);
-
-  useEffect(() => {
-    setMessageQueue([]);
-  }, [currentSessionId]);
 
   useEffect(() => {
     if (!selectedProject) {
