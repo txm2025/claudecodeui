@@ -11,7 +11,7 @@ import type {
   SetStateAction,
   TouchEvent,
 } from 'react';
-import { ImageIcon, MessageSquareIcon, XIcon, ArrowDownIcon } from 'lucide-react';
+import { ImageIcon, MessageSquareIcon, XIcon, ArrowDownIcon, ListIcon } from 'lucide-react';
 import type { PendingPermissionRequest, PermissionMode, Provider } from '../../types/types';
 import CommandMenu from './CommandMenu';
 import ClaudeStatus from './ClaudeStatus';
@@ -101,6 +101,8 @@ interface ChatComposerProps {
   placeholder: string;
   isTextareaExpanded: boolean;
   sendByCtrlEnter?: boolean;
+  messageQueue: string[];
+  onRemoveQueuedMessage: (index: number) => void;
 }
 
 export default function ChatComposer({
@@ -156,6 +158,8 @@ export default function ChatComposer({
   placeholder,
   isTextareaExpanded,
   sendByCtrlEnter,
+  messageQueue,
+  onRemoveQueuedMessage,
 }: ChatComposerProps) {
   const { t } = useTranslation('chat');
   const textareaRect = textareaRef.current?.getBoundingClientRect();
@@ -191,6 +195,38 @@ export default function ChatComposer({
             handlePermissionDecision={handlePermissionDecision}
             handleGrantToolPermission={handleGrantToolPermission}
           />
+        </div>
+      )}
+
+      {messageQueue.length > 0 && (
+        <div className="mx-auto mb-2 max-w-4xl">
+          <div className="flex items-center gap-2 px-1 pb-1 text-xs text-muted-foreground">
+            <ListIcon className="h-3.5 w-3.5" />
+            <span>{t('input.queued', { defaultValue: 'I kø' })} ({messageQueue.length})</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            {messageQueue.map((msg, index) => (
+              <div
+                key={index}
+                className="group flex items-start gap-2 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-sm"
+              >
+                <span className="mt-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
+                  {index + 1}
+                </span>
+                <span className="flex-1 whitespace-pre-wrap break-words text-foreground/90 line-clamp-3">
+                  {msg}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveQueuedMessage(index)}
+                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive hover:opacity-100"
+                  title={t('input.removeQueued', { defaultValue: 'Fjern fra kø' })}
+                >
+                  <XIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

@@ -146,6 +146,7 @@ export function useChatComposerState({
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
   const [thinkingMode, setThinkingMode] = useState('none');
+  const [messageQueue, setMessageQueue] = useState<string[]>([]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputHighlightRef = useRef<HTMLDivElement>(null);
@@ -467,7 +468,17 @@ export function useChatComposerState({
     ) => {
       event.preventDefault();
       const currentInput = inputValueRef.current;
-      if (!currentInput.trim() || isLoading || !selectedProject) {
+      if (!currentInput.trim() || !selectedProject) {
+        return;
+      }
+      // Queue message if a stream is active; auto-sender picks it up on completion.
+      if (isLoading) {
+        setMessageQueue((q) => [...q, currentInput]);
+        setInput('');
+        inputValueRef.current = '';
+        if (selectedProject) {
+          safeLocalStorage.removeItem(`draft_input_${selectedProject.projectId}`);
+        }
         return;
       }
 
@@ -708,6 +719,32 @@ export function useChatComposerState({
     handleSubmitRef.current = handleSubmit;
   }, [handleSubmit]);
 
+  // Auto-send next queued message when streaming finishes.
+  const wasLoadingRef = useRef(isLoading);
+  useEffect(() => {
+    const wasLoading = wasLoadingRef.current;
+    wasLoadingRef.current = isLoading;
+    if (!wasLoading || isLoading) return;
+    if (messageQueue.length === 0 || !selectedProject) return;
+    const next = messageQueue[0];
+    setMessageQueue((q) => q.slice(1));
+    setInput(next);
+    inputValueRef.current = next;
+    const fire = () => {
+      if (handleSubmitRef.current) handleSubmitRef.current(createFakeSubmitEvent());
+    };
+    const t = setTimeout(fire, 50);
+    return () => clearTimeout(t);
+  }, [isLoading, messageQueue, selectedProject]);
+
+  const removeQueuedMessage = useCallback((index: number) => {
+    setMessageQueue((q) => q.filter((_, i) => i !== index));
+  }, []);
+
+  const clearMessageQueue = useCallback(() => {
+    setMessageQueue([]);
+  }, []);
+
   useEffect(() => {
     inputValueRef.current = input;
   }, [input]);
@@ -722,7 +759,12 @@ export function useChatComposerState({
       inputValueRef.current = next;
       return next;
     });
+    setMessageQueue([]);
   }, [selectedProject?.projectId]);
+
+  useEffect(() => {
+    setMessageQueue([]);
+  }, [currentSessionId]);
 
   useEffect(() => {
     if (!selectedProject) {
@@ -853,6 +895,7 @@ export function useChatComposerState({
     if (!canAbortSession) {
       return;
     }
+    setMessageQueue([]);
 
     const pendingSessionId =
       typeof window !== 'undefined' ? sessionStorage.getItem('pendingSessionId') : null;
@@ -978,5 +1021,8 @@ export function useChatComposerState({
     handleGrantToolPermission,
     handleInputFocusChange,
     isInputFocused,
+    messageQueue,
+    removeQueuedMessage,
+    clearMessageQueue,
   };
 }
