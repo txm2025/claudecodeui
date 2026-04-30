@@ -735,6 +735,7 @@ export function useChatComposerState({
   }, [handleSubmit]);
 
   // Persist the queue per session so it survives navigating away and back.
+  // Also dispatch a custom event so same-tab listeners (sidebar badges) can react.
   useEffect(() => {
     if (!queueStorageKey) return;
     try {
@@ -743,6 +744,7 @@ export function useChatComposerState({
       } else {
         safeLocalStorage.setItem(queueStorageKey, JSON.stringify(messageQueue));
       }
+      window.dispatchEvent(new CustomEvent('queuechange', { detail: { key: queueStorageKey } }));
     } catch {
       // Storage may be full or disabled — degrade silently.
     }

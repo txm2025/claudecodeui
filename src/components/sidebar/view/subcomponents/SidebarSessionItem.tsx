@@ -1,4 +1,5 @@
 import { Check, Edit2, Trash2, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { TFunction } from 'i18next';
 
 import { Button } from '../../../../shared/view/ui';
@@ -6,6 +7,40 @@ import { cn } from '../../../../lib/utils';
 import type { Project, ProjectSession, LLMProvider } from '../../../../types/app';
 import type { SessionWithProvider } from '../../types/types';
 import { createSessionViewModel } from '../../utils/utils';
+
+function useSessionQueueCount(sessionId: string): number {
+  const key = `messageQueue:${sessionId}`;
+  const readCount = () => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.length : 0;
+    } catch { return 0; }
+  };
+  const [count, setCount] = useState(readCount);
+
+  useEffect(() => {
+    setCount(readCount());
+    // cross-tab sync
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === key) setCount(readCount());
+    };
+    // same-tab sync via custom event from useChatComposerState
+    const onQueueChange = (e: CustomEvent<{ key: string }>) => {
+      if (e.detail?.key === key) setCount(readCount());
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('queuechange', onQueueChange as EventListener);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('queuechange', onQueueChange as EventListener);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
+  return count;
+}
 
 type SidebarSessionItemProps = {
   project: Project;
@@ -76,6 +111,7 @@ export default function SidebarSessionItem({
   const sessionView = createSessionViewModel(session, currentTime, t);
   const isSelected = selectedSession?.id === session.id;
   const compactSessionAge = formatCompactSessionAge(sessionView.sessionTime, currentTime);
+  const queueCount = useSessionQueueCount(session.id);
 
   // Sessions are owned by a project identified by `projectId` (DB primary key)
   // after the projectName → projectId migration.
@@ -105,6 +141,11 @@ export default function SidebarSessionItem({
         >
           {sessionView.isActive && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />}
           <span className="min-w-0 flex-1 truncate text-xs">{sessionView.sessionName}</span>
+          {queueCount > 0 && (
+            <span className="flex-shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold leading-none text-primary-foreground">
+              {queueCount}
+            </span>
+          )}
           {compactSessionAge && (
             <span className="flex-shrink-0 text-[10px] text-muted-foreground/60">{compactSessionAge}</span>
           )}
@@ -165,6 +206,11 @@ export default function SidebarSessionItem({
             <div className="flex w-full min-w-0 items-center gap-2">
               {sessionView.isActive && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />}
               <span className="min-w-0 flex-1 truncate text-xs">{sessionView.sessionName}</span>
+              {queueCount > 0 && (
+                <span className="flex-shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold leading-none text-primary-foreground group-hover:opacity-0">
+                  {queueCount}
+                </span>
+              )}
               {compactSessionAge && (
                 <span className="ml-auto flex-shrink-0 text-[10px] text-muted-foreground/50 group-hover:opacity-0">
                   {compactSessionAge}
