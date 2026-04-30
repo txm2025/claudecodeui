@@ -734,45 +734,56 @@ export function useChatComposerState({
     handleSubmitRef.current = handleSubmit;
   }, [handleSubmit]);
 
-  // Persist the queue per session so it survives navigating away and back.
-  // Also dispatch a custom event so same-tab listeners (sidebar badges) can react.
-  useEffect(() => {
-    if (!queueStorageKey) return;
-    try {
-      if (messageQueue.length === 0) {
-        safeLocalStorage.removeItem(queueStorageKey);
-      } else {
-        safeLocalStorage.setItem(queueStorageKey, JSON.stringify(messageQueue));
-      }
-      window.dispatchEvent(new CustomEvent('queuechange', { detail: { key: queueStorageKey } }));
-    } catch {
-      // Storage may be full or disabled — degrade silently.
-    }
-  }, [messageQueue, queueStorageKey]);
+  // The key that the *current* messageQueue state belongs to. Intentionally
+  // NOT derived from queueStorageKey on every render — only updated by the
+  // reload effect after the queue has been swapped to match a new session.
+  // The storage-write effect writes against this ref so a queue that belongs
+  // to session A never gets written under session B's key during the brief
+  // window between key change and reload.
+  const ownerQueueKeyRef = useRef(queueStorageKey);
 
-  // Reload the queue from storage when switching to a different session/project.
-  const lastQueueKeyRef = useRef(queueStorageKey);
+  // Reload the queue from storage when switching to a different session.
+  // Updates ownerQueueKeyRef before setMessageQueue so the next storage
+  // write lands at the correct key.
   useEffect(() => {
-    if (lastQueueKeyRef.current === queueStorageKey) return;
-    lastQueueKeyRef.current = queueStorageKey;
+    if (ownerQueueKeyRef.current === queueStorageKey) return;
     if (!queueStorageKey) {
+      ownerQueueKeyRef.current = null;
       setMessageQueue([]);
       return;
     }
+    let loaded: string[] = [];
     try {
       const raw = safeLocalStorage.getItem(queueStorageKey);
-      if (!raw) {
-        setMessageQueue([]);
-        return;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          loaded = parsed.filter((v): v is string => typeof v === 'string');
+        }
       }
-      const parsed = JSON.parse(raw);
-      setMessageQueue(
-        Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [],
-      );
     } catch {
-      setMessageQueue([]);
+      // Corrupt storage — fall back to empty queue.
     }
+    ownerQueueKeyRef.current = queueStorageKey;
+    setMessageQueue(loaded);
   }, [queueStorageKey]);
+
+  // Persist the queue under the key it belongs to. Deps deliberately exclude
+  // queueStorageKey: writing must follow data changes, not key changes.
+  useEffect(() => {
+    const key = ownerQueueKeyRef.current;
+    if (!key) return;
+    try {
+      if (messageQueue.length === 0) {
+        safeLocalStorage.removeItem(key);
+      } else {
+        safeLocalStorage.setItem(key, JSON.stringify(messageQueue));
+      }
+      window.dispatchEvent(new CustomEvent('queuechange', { detail: { key } }));
+    } catch {
+      // Storage may be full or disabled — degrade silently.
+    }
+  }, [messageQueue]);
 
   // Live refs so the auto-send timer can verify state at fire time, not at
   // schedule time. This is what kills the race when navigating away during
