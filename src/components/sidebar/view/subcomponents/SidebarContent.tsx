@@ -97,8 +97,7 @@ export default function SidebarContent({
 
   return (
     <div
-      className="flex h-full flex-col bg-background/80 backdrop-blur-sm md:w-72 md:select-none"
-      style={{}}
+      className="flex h-full flex-col border-r border-border bg-card md:w-64 md:select-none"
     >
       <SidebarHeader
         isPWA={isPWA}

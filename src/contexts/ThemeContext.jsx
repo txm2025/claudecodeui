@@ -19,12 +19,12 @@ export const ThemeProvider = ({ children }) => {
       return savedTheme === 'dark';
     }
     
-    // Check system preference
+    // Check system preference, but default to dark for Cursor-style experience
     if (window.matchMedia) {
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
-    
-    return false;
+
+    return true;
   });
 
   // Update document class and localStorage when theme changes
@@ -41,7 +41,7 @@ export const ThemeProvider = ({ children }) => {
       
       const themeColorMeta = document.querySelector('meta[name="theme-color"]');
       if (themeColorMeta) {
-        themeColorMeta.setAttribute('content', '#0c1117'); // Dark background color (hsl(222.2 84% 4.9%))
+        themeColorMeta.setAttribute('content', '#13161e'); // Dark background (hsl(220 12% 9%))
       }
     } else {
       document.documentElement.classList.remove('dark');
