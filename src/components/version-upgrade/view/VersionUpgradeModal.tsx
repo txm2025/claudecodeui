@@ -1,10 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { authenticatedFetch } from "../../../utils/api";
 import { ReleaseInfo } from "../../../types/sharedTypes";
-import { copyTextToClipboard } from "../../../utils/clipboard";
 import type { InstallMode } from "../../../hooks/useVersionCheck";
-import { IS_PLATFORM } from "../../../constants/config";
 
 interface VersionUpgradeModalProps {
     isOpen: boolean;
@@ -15,74 +11,14 @@ interface VersionUpgradeModalProps {
     installMode: InstallMode;
 }
 
-const RELOAD_COUNTDOWN_START = 30;
-
 export function VersionUpgradeModal({
     isOpen,
     onClose,
     releaseInfo,
     currentVersion,
     latestVersion,
-    installMode
 }: VersionUpgradeModalProps) {
     const { t } = useTranslation('common');
-    const upgradeCommand = installMode === 'npm'
-        ? t('versionUpdate.npmUpgradeCommand')
-        : IS_PLATFORM
-            ? 'npm run update:platform'
-            : 'git checkout main && git pull && npm install';
-    const [isUpdating, setIsUpdating] = useState(false);
-    const [updateOutput, setUpdateOutput] = useState('');
-    const [updateError, setUpdateError] = useState('');
-    const [reloadCountdown, setReloadCountdown] = useState<number | null>(null);
-
-    useEffect(() => {
-        if (!IS_PLATFORM || reloadCountdown === null || reloadCountdown <= 0) {
-            return;
-        }
-
-        const timeoutId = window.setTimeout(() => {
-            setReloadCountdown((previousCountdown) => {
-                if (previousCountdown === null) {
-                    return null;
-                }
-
-                return Math.max(previousCountdown - 1, 0);
-            });
-        }, 1000);
-
-        return () => window.clearTimeout(timeoutId);
-    }, [reloadCountdown]);
-
-    const handleUpdateNow = useCallback(async () => {
-        setIsUpdating(true);
-        setUpdateOutput('Starting update...\n');
-        setReloadCountdown(IS_PLATFORM ? RELOAD_COUNTDOWN_START : null);
-        setUpdateError('');
-
-        try {
-            // Call the backend API to run the update command
-            const response = await authenticatedFetch('/api/system/update', {
-                method: 'POST',
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                setUpdateOutput(prev => prev + data.output + '\n');
-                setUpdateOutput(prev => prev + '\n✅ Update completed successfully!\n');
-                setUpdateOutput(prev => prev + 'Please restart the server to apply changes.' + '\n');
-            } else {
-                setUpdateError(data.error || 'Update failed');
-                setUpdateOutput(prev => prev + '\n❌ Update failed: ' + (data.error || 'Unknown error') + '\n');
-            }
-        } catch (error: any) {
-            setUpdateError(error.message);
-            setUpdateOutput(prev => prev + '\n❌ Update failed: ' + error.message + '\n');
-        } finally {
-            setIsUpdating(false);
-        }
-    }, []);
 
     if (!isOpen) return null;
 
@@ -161,42 +97,10 @@ export function VersionUpgradeModal({
                     </div>
                 )}
 
-                {/* Update Output */}
-                {(updateOutput || updateError) && (
-                    <div className="space-y-2">
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">{t('versionUpdate.updateProgress')}</h3>
-                        <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 p-4 dark:bg-gray-950">
-                            <pre className="whitespace-pre-wrap font-mono text-xs text-green-400">{updateOutput}</pre>
-                        </div>
-                        {IS_PLATFORM && reloadCountdown !== null && (
-                            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/20 dark:text-blue-200">
-                                {reloadCountdown === 0
-                                    ? 'Refresh the page now. If that doesn\'t work, RESTART the environment.'
-                                    : `Refresh the page in ${reloadCountdown} ${reloadCountdown === 1 ? 'second' : 'seconds'}. If that doesn\'t work, RESTART the environment.`}
-                            </div>
-                        )}
-                        {updateError && (
-                            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200">
-                                {updateError}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Upgrade Instructions */}
-                {!isUpdating && !updateOutput && (
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">{t('versionUpdate.manualUpgrade')}</h3>
-                        <div className="rounded-lg border bg-gray-100 p-3 dark:bg-gray-800">
-                            <code className="font-mono text-sm text-gray-800 dark:text-gray-200">
-                                {upgradeCommand}
-                            </code>
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {t('versionUpdate.manualUpgradeHint')}
-                        </p>
-                    </div>
-                )}
+                {/* Forked-build notice — auto-update is disabled to protect local customizations */}
+                <div className="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-200">
+                    Auto-update er deaktiveret i denne build. Kør <code className="rounded bg-amber-100 px-1 font-mono dark:bg-amber-900/40">bash /home/claude/cloudcli-fork/update.sh</code> i terminalen for at hente upstream-ændringer og bygge fra fork.
+                </div>
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
@@ -204,32 +108,8 @@ export function VersionUpgradeModal({
                         onClick={onClose}
                         className="flex-1 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                     >
-                        {updateOutput ? t('versionUpdate.buttons.close') : t('versionUpdate.buttons.later')}
+                        {t('versionUpdate.buttons.close')}
                     </button>
-                    {!updateOutput && (
-                        <>
-                            <button
-                                onClick={() => copyTextToClipboard(upgradeCommand)}
-                                className="flex-1 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                            >
-                                {t('versionUpdate.buttons.copyCommand')}
-                            </button>
-                            <button
-                                onClick={handleUpdateNow}
-                                disabled={isUpdating}
-                                className="flex flex-1 items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
-                            >
-                                {isUpdating ? (
-                                    <>
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                        {t('versionUpdate.buttons.updating')}
-                                    </>
-                                ) : (
-                                    t('versionUpdate.buttons.updateNow')
-                                )}
-                            </button>
-                        </>
-                    )}
                 </div>
             </div>
         </div>
