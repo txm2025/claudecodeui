@@ -174,6 +174,8 @@ function ChatInterface({
     isInputFocused,
     messageQueue,
     removeQueuedMessage,
+    updateQueuedMessage,
+    moveQueuedMessage,
   } = useChatComposerState({
     selectedProject,
     selectedSession,
@@ -418,6 +420,8 @@ function ChatInterface({
           sendByCtrlEnter={sendByCtrlEnter}
           messageQueue={messageQueue}
           onRemoveQueuedMessage={removeQueuedMessage}
+          onUpdateQueuedMessage={updateQueuedMessage}
+          onMoveQueuedMessage={moveQueuedMessage}
         />
       </div>
 

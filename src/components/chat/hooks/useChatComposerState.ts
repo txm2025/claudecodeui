@@ -823,6 +823,25 @@ export function useChatComposerState({
     setMessageQueue((q) => q.filter((_, i) => i !== index));
   }, []);
 
+  const updateQueuedMessage = useCallback((index: number, text: string) => {
+    setMessageQueue((q) => {
+      if (index < 0 || index >= q.length) return q;
+      const next = q.slice();
+      next[index] = text;
+      return next;
+    });
+  }, []);
+
+  const moveQueuedMessage = useCallback((index: number, direction: 'up' | 'down') => {
+    setMessageQueue((q) => {
+      const target = direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || index >= q.length || target < 0 || target >= q.length) return q;
+      const next = q.slice();
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }, []);
+
   const clearMessageQueue = useCallback(() => {
     setMessageQueue([]);
   }, []);
@@ -1100,6 +1119,8 @@ export function useChatComposerState({
     isInputFocused,
     messageQueue,
     removeQueuedMessage,
+    updateQueuedMessage,
+    moveQueuedMessage,
     clearMessageQueue,
   };
 }

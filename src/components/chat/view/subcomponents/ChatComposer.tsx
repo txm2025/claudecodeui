@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   ChangeEvent,
@@ -11,7 +12,17 @@ import type {
   SetStateAction,
   TouchEvent,
 } from 'react';
-import { ImageIcon, MessageSquareIcon, XIcon, ArrowDownIcon, ListIcon } from 'lucide-react';
+import {
+  ImageIcon,
+  MessageSquareIcon,
+  XIcon,
+  ArrowDownIcon,
+  ListIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  PencilIcon,
+  CheckIcon,
+} from 'lucide-react';
 import type { PendingPermissionRequest, PermissionMode, Provider } from '../../types/types';
 import CommandMenu from './CommandMenu';
 import ClaudeStatus from './ClaudeStatus';
@@ -103,6 +114,8 @@ interface ChatComposerProps {
   sendByCtrlEnter?: boolean;
   messageQueue: string[];
   onRemoveQueuedMessage: (index: number) => void;
+  onUpdateQueuedMessage: (index: number, text: string) => void;
+  onMoveQueuedMessage: (index: number, direction: 'up' | 'down') => void;
 }
 
 export default function ChatComposer({
@@ -160,6 +173,8 @@ export default function ChatComposer({
   sendByCtrlEnter,
   messageQueue,
   onRemoveQueuedMessage,
+  onUpdateQueuedMessage,
+  onMoveQueuedMessage,
 }: ChatComposerProps) {
   const { t } = useTranslation('chat');
   const textareaRect = textareaRef.current?.getBoundingClientRect();
@@ -206,25 +221,18 @@ export default function ChatComposer({
           </div>
           <div className="flex flex-col gap-1">
             {messageQueue.map((msg, index) => (
-              <div
-                key={index}
-                className="group flex items-start gap-2 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-sm"
-              >
-                <span className="mt-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
-                  {index + 1}
-                </span>
-                <span className="flex-1 whitespace-pre-wrap break-words text-foreground/90 line-clamp-3">
-                  {msg}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onRemoveQueuedMessage(index)}
-                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive hover:opacity-100"
-                  title={t('input.removeQueued', { defaultValue: 'Fjern fra kø' })}
-                >
-                  <XIcon className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              <QueuedMessageItem
+                key={`${index}-${msg.slice(0, 8)}`}
+                index={index}
+                text={msg}
+                isFirst={index === 0}
+                isLast={index === messageQueue.length - 1}
+                onUpdate={(value) => onUpdateQueuedMessage(index, value)}
+                onRemove={() => onRemoveQueuedMessage(index)}
+                onMoveUp={() => onMoveQueuedMessage(index, 'up')}
+                onMoveDown={() => onMoveQueuedMessage(index, 'down')}
+                t={t}
+              />
             ))}
           </div>
         </div>
@@ -450,6 +458,159 @@ export default function ChatComposer({
         </PromptInputFooter>
       </PromptInput>
       </div>}
+    </div>
+  );
+}
+
+interface QueuedMessageItemProps {
+  index: number;
+  text: string;
+  isFirst: boolean;
+  isLast: boolean;
+  onUpdate: (text: string) => void;
+  onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  t: ReturnType<typeof useTranslation>['t'];
+}
+
+function QueuedMessageItem({
+  index,
+  text,
+  isFirst,
+  isLast,
+  onUpdate,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  t,
+}: QueuedMessageItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(text);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!isEditing) setDraft(text);
+  }, [text, isEditing]);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(draft.length, draft.length);
+      // Auto-size to content.
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [isEditing, draft.length]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      onRemove();
+      return;
+    }
+    if (trimmed !== text) onUpdate(trimmed);
+    setIsEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(text);
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="group flex items-start gap-2 rounded-md border border-border/60 bg-card/60 px-2.5 py-1.5 text-sm transition-colors hover:bg-card">
+      <div className="flex flex-col gap-0.5 pt-0.5">
+        <button
+          type="button"
+          onClick={onMoveUp}
+          disabled={isFirst}
+          className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+          title={t('input.moveQueuedUp', { defaultValue: 'Flyt op' })}
+          tabIndex={-1}
+        >
+          <ChevronUpIcon className="h-3 w-3" />
+        </button>
+        <button
+          type="button"
+          onClick={onMoveDown}
+          disabled={isLast}
+          className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+          title={t('input.moveQueuedDown', { defaultValue: 'Flyt ned' })}
+          tabIndex={-1}
+        >
+          <ChevronDownIcon className="h-3 w-3" />
+        </button>
+      </div>
+      <span className="mt-0.5 flex h-5 min-w-5 items-center justify-center rounded bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
+        {index + 1}
+      </span>
+      {isEditing ? (
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            const ta = e.target as HTMLTextAreaElement;
+            ta.style.height = 'auto';
+            ta.style.height = `${ta.scrollHeight}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              cancel();
+            } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              commit();
+            }
+          }}
+          onBlur={commit}
+          rows={1}
+          className="flex-1 resize-none rounded border border-border/60 bg-background px-2 py-1 text-sm text-foreground focus:border-primary focus:outline-none"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsEditing(true)}
+          className="flex-1 cursor-text whitespace-pre-wrap break-words text-left text-foreground/90 line-clamp-3"
+          title={t('input.editQueued', { defaultValue: 'Klik for at redigere' })}
+        >
+          {text}
+        </button>
+      )}
+      <div className="flex items-center gap-0.5">
+        {isEditing ? (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              // Prevent blur firing before commit.
+              e.preventDefault();
+              commit();
+            }}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
+            title={t('input.saveQueued', { defaultValue: 'Gem' })}
+          >
+            <CheckIcon className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-foreground group-hover:opacity-100"
+            title={t('input.editQueued', { defaultValue: 'Rediger' })}
+          >
+            <PencilIcon className="h-3 w-3" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive hover:opacity-100"
+          title={t('input.removeQueued', { defaultValue: 'Fjern fra kø' })}
+        >
+          <XIcon className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
