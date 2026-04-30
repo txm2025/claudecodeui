@@ -146,11 +146,11 @@ export function useChatComposerState({
   const [imageErrors, setImageErrors] = useState<Map<string, string>>(new Map());
   const [isTextareaExpanded, setIsTextareaExpanded] = useState(false);
   const [thinkingMode, setThinkingMode] = useState('none');
-  const queueStorageKey = currentSessionId
-    ? `messageQueue:${currentSessionId}`
-    : selectedProject?.projectId
-      ? `messageQueue:project:${selectedProject.projectId}`
-      : null;
+  // Scope queue storage strictly to the active session id. Falling back to a
+  // project key created an orphan-the-queue bug where messages typed before
+  // the session got an id were left under a key the session-scoped reload
+  // effect never reads from.
+  const queueStorageKey = currentSessionId ? `messageQueue:${currentSessionId}` : null;
   const [messageQueue, setMessageQueue] = useState<string[]>(() => {
     if (typeof window === 'undefined' || !queueStorageKey) return [];
     try {
@@ -772,38 +772,50 @@ export function useChatComposerState({
     }
   }, [queueStorageKey]);
 
-  // Auto-send next queued message — only when we have a stable session whose
-  // stream has actually completed. Tracking the previous session prevents the
-  // spurious fire that happens when isLoading flips false because the user
-  // navigated away from a streaming session.
-  const prevLoadingRef = useRef(isLoading);
-  const prevSessionKeyRef = useRef<string | null>(queueStorageKey);
-  useEffect(() => {
-    const prevLoading = prevLoadingRef.current;
-    const prevSessionKey = prevSessionKeyRef.current;
-    prevLoadingRef.current = isLoading;
-    prevSessionKeyRef.current = queueStorageKey;
+  // Live refs so the auto-send timer can verify state at fire time, not at
+  // schedule time. This is what kills the race when navigating away during
+  // a stream — by the time the timer fires we re-check the *current* session
+  // and loading state instead of the stale closure values.
+  const isLoadingRef = useRef(isLoading);
+  isLoadingRef.current = isLoading;
+  const queueStorageKeyLiveRef = useRef(queueStorageKey);
+  queueStorageKeyLiveRef.current = queueStorageKey;
 
+  // Auto-send next queued message. Fires whenever we are on a session, idle,
+  // and have pending items. A short delay rides out the transient
+  // isLoading/sessionId churn that happens during sidebar navigation.
+  useEffect(() => {
+    if (!queueStorageKey) return;
     if (isLoading) return;
     if (!selectedProject) return;
     if (messageQueue.length === 0) return;
 
-    // Two ways to legitimately fire:
-    //   1. Stream just completed on the same session we're currently viewing.
-    //   2. We just landed on (or returned to) a session whose stream is idle
-    //      and has pending queued messages — auto-resume.
-    const justCompletedHere = prevLoading && prevSessionKey === queueStorageKey;
-    const sessionStableAndIdle = prevSessionKey === queueStorageKey && !prevLoading;
-    if (!justCompletedHere && !sessionStableAndIdle) return;
+    const scheduledForKey = queueStorageKey;
+    const t = setTimeout(() => {
+      // Re-verify state at fire time, not schedule time.
+      if (queueStorageKeyLiveRef.current !== scheduledForKey) return;
+      if (isLoadingRef.current) return;
 
-    const next = messageQueue[0];
-    setMessageQueue((q) => q.slice(1));
-    setInput(next);
-    inputValueRef.current = next;
-    const fire = () => {
-      if (handleSubmitRef.current) handleSubmitRef.current(createFakeSubmitEvent());
-    };
-    const t = setTimeout(fire, 50);
+      setMessageQueue((current) => {
+        if (current.length === 0) return current;
+        // Final check before mutation — guards against rapid double-fire
+        // if the effect re-runs while the timer was pending.
+        if (queueStorageKeyLiveRef.current !== scheduledForKey) return current;
+        if (isLoadingRef.current) return current;
+
+        const [next, ...rest] = current;
+        setInput(next);
+        inputValueRef.current = next;
+        // Submit after this state-update flushes.
+        Promise.resolve().then(() => {
+          if (queueStorageKeyLiveRef.current !== scheduledForKey) return;
+          if (isLoadingRef.current) return;
+          if (handleSubmitRef.current) handleSubmitRef.current(createFakeSubmitEvent());
+        });
+        return rest;
+      });
+    }, 300);
+
     return () => clearTimeout(t);
   }, [isLoading, messageQueue, selectedProject, queueStorageKey]);
 

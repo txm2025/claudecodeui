@@ -87,39 +87,39 @@
   }
 
   .dark {
-    /* Cursor-inspired dark theme */
-    --background: 220 12% 9%;
-    --foreground: 215 11% 84%;
-    --card: 220 12% 12%;
-    --card-foreground: 215 11% 84%;
-    --popover: 220 12% 11%;
-    --popover-foreground: 215 11% 84%;
-    --primary: 217 78% 62%;
+    /* Cursor-style dark theme — cool-toned, near-black */
+    --background: 224 14% 11%;       /* #16181f editor bg */
+    --foreground: 220 16% 80%;       /* #c4c8d3 text */
+    --card: 225 16% 8%;              /* #0f1117 sidebar bg */
+    --card-foreground: 220 16% 80%;
+    --popover: 224 15% 13%;          /* #1b1d25 */
+    --popover-foreground: 220 16% 80%;
+    --primary: 222 88% 68%;          /* #5b8fff cursor blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 12% 17%;
-    --secondary-foreground: 215 11% 84%;
-    --muted: 220 12% 14%;
-    --muted-foreground: 215 9% 52%;
-    --accent: 220 12% 17%;
-    --accent-foreground: 215 11% 84%;
-    --destructive: 0 70% 55%;
+    --secondary: 223 14% 17%;        /* #222530 */
+    --secondary-foreground: 220 14% 70%;  /* #a8acba */
+    --muted: 224 14% 14%;            /* #1b1e27 */
+    --muted-foreground: 220 10% 48%; /* #717589 */
+    --accent: 223 14% 19%;           /* #272a36 hover */
+    --accent-foreground: 220 16% 80%;
+    --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 12% 18%;
-    --input: 220 12% 14%;
-    --ring: 217 78% 62%;
-    --radius: 0.375rem;
+    --border: 223 13% 21%;           /* #2d303d barely visible */
+    --input: 224 14% 14%;
+    --ring: 222 88% 68%;
+    --radius: 0.2rem;                /* 3px - minimal rounding */
 
     /* Nav design tokens — dark overrides */
-    --nav-glass-bg: 220 12% 9% / 0.85;
-    --nav-glass-blur: 20px;
-    --nav-glass-saturate: 1.4;
-    --nav-tab-glow: 217 78% 62% / 0.20;
-    --nav-tab-ring: 217 78% 62% / 0.12;
-    --nav-float-shadow: 0 0% 0% / 0.40;
-    --nav-float-ring: 220 12% 18% / 0.4;
-    --nav-divider-color: 220 12% 18% / 0.6;
-    --nav-input-bg: 220 12% 14% / 0.8;
-    --nav-input-focus-ring: 217 78% 62% / 0.20;
+    --nav-glass-bg: 225 16% 8% / 0.9;
+    --nav-glass-blur: 16px;
+    --nav-glass-saturate: 1.2;
+    --nav-tab-glow: 222 88% 68% / 0.15;
+    --nav-tab-ring: 222 88% 68% / 0.10;
+    --nav-float-shadow: 0 0% 0% / 0.5;
+    --nav-float-ring: 223 13% 21% / 0.5;
+    --nav-divider-color: 223 13% 21% / 0.7;
+    --nav-input-bg: 224 14% 14% / 0.9;
+    --nav-input-focus-ring: 222 88% 68% / 0.18;
   }
 }
 
